@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, TextInput, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { colors, fonts } from '../../styles';
 
@@ -9,7 +11,22 @@ import Button from '../components/button';
 
 const UserIdentification = () => {
     const navigation = useNavigation();
-    const [hasValue, setHasValue] = useState(false);
+    const [name, setName] = useState('');
+
+    const handleSetName = (text: string) => {
+        setName(text);
+    };
+
+    const handleNavigate = async () => {
+        await AsyncStorage.setItem('@plantmanager::user', name);
+        navigation.navigate('Confirmation', {
+            emoji: '😁',
+            title: 'Prontinho',
+            subtitle: 'Agora vamos começar a cuidar das suas plantinhas com muito cuidado.',
+            actionText: 'Começar',
+            nextRoute: 'PlantSelect',
+        });
+    };
 
     return (
         <KeyboardLayout style={styles.container}>
@@ -27,14 +44,14 @@ const UserIdentification = () => {
                     style={styles.input}
                     placeholder="Digite seu nome"
                     autoFocus
-                    onChangeText={(text) => setHasValue(!!text)}
+                    onChangeText={handleSetName}
                 />
 
                 <Button
-                    disabled={!hasValue}
+                    disabled={!name}
                     style={styles.button}
                     text="Começar"
-                    onPress={() => navigation.navigate('Confirmation')}
+                    onPress={handleNavigate}
                 />
             </View>
         </KeyboardLayout>

@@ -1,29 +1,39 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { colors, fonts } from '../../styles';
 
 import Layout from '../components/layout';
 import Button from '../components/button';
 
+interface IConfirmScreen {
+    emoji: string; 
+    title: string;
+    subtitle: string;
+    actionText: string;
+    nextRoute: string;
+}
+
 const Confirmation = () => {
     const navigation = useNavigation();
+    const { params: { emoji, title, subtitle, actionText, nextRoute } } = useRoute() as { params: IConfirmScreen };
+    
     return (
         <Layout>
             <View style={styles.container}>
                 <Text style={styles.emoji}>
-                    😁
+                    {emoji}
                 </Text>
                 <Text style={styles.title}>
-                    Prontinho
+                    {title}
                 </Text>
 
                 <Text style={styles.subtitle}>
-                    Agora vamos começar a cuidar das suas plantinhas com muito cuidado.
+                    {subtitle}
                 </Text>
 
-                <Button text="Começar" onPress={() => navigation.navigate('PlantSelect')} />
+                <Button text={actionText} onPress={() => navigation.navigate(nextRoute)} />
             </View>
         </Layout>
     )

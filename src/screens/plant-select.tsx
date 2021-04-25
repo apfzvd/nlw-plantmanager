@@ -9,30 +9,21 @@ import Header from '../components/header';
 import AmbientButton from '../components/ambient-button';
 import PlantCard from '../components/plant-card';
 import Loading from '../components/loading';
+import { useNavigation } from '@react-navigation/native';
+import { IPlant } from '../helpers/plant-storage';
 
 interface AmbientItems {
     key: string;
     title: string;
 }
 
-interface Plant {
-    id: number;
-    name: string;
-    about: string;
-    water_tips: string;
-    photo: string;
-    environments: string[];
-    frequency: {
-      times: number;
-      repeat_every: string;
-    }
-  }
-
 const PlantSelect = () => {
+    const navigation = useNavigation();
+    
     const [selectedAmbient, setSelectedAmbient] = useState('all');
     const [data, setData] = useState<AmbientItems[]>([]);
-    const [plantsData, setPlantsData] = useState<Plant[]>([]);
-    const [plants, setPlants] = useState<Plant[]>([]);
+    const [plantsData, setPlantsData] = useState<IPlant[]>([]);
+    const [plants, setPlants] = useState<IPlant[]>([]);
     const [loading, setLoading] = useState(false);
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -54,7 +45,7 @@ const PlantSelect = () => {
         setLoadingMore(false);
     };
 
-    const paginatePlants = ({ distanceFromEnd }) => {
+    const paginatePlants = ({ distanceFromEnd }: { distanceFromEnd: number }) => {
         if (distanceFromEnd < 1) {
             return;
         }
@@ -129,7 +120,11 @@ const PlantSelect = () => {
                     <FlatList
                         data={plants}
                         renderItem={({ item }) => 
-                            <PlantCard name={item.name} photo={item.photo} />
+                            <PlantCard
+                                name={item.name}
+                                photo={item.photo}
+                                onPress={() => navigation.navigate('SavePlant', { plant: item })}
+                            />
                         }
                         keyExtractor={item => `${item.id}`}
                         numColumns={2}
