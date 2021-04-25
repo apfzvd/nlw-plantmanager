@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, FlatList } from 'react-native';
+import { View, Text, Image, StyleSheet, FlatList, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 import { colors, fonts } from '../../styles';
 
-import { fetchSavedPlantsList, SavedPlant } from '../helpers/plant-storage';
+import { deleteSavedPlant, fetchSavedPlantsList, SavedPlant } from '../helpers/plant-storage';
 
 import Layout from '../components/layout';
 import Header from '../components/header';
@@ -13,13 +13,17 @@ import { alertMessage } from '../helpers/alert-message';
 import { format, formatDistance } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import PlantCard from '../components/plant-card';
+import Loading from '../components/loading';
 
 const ListSavedPlants = () => {
     const navigation = useNavigation();
+    const [loading, setLoading] = useState(false);
     const [savedPlants, setSavedPlants] = useState<SavedPlant[]>();
     const [nextWateringText, setNextWateringText] = useState('');
 
     const fetchSaved = async () => {
+        setLoading(true);
+
         try {
             const plants = await fetchSavedPlantsList() || [];
 
@@ -31,10 +35,34 @@ const ListSavedPlants = () => {
             
             setNextWateringText(`Não se esqueça de regar a ${plants[0].name} em ${nextWateringDiff}.`)
             setSavedPlants(plants);
+            setLoading(false);
+        } catch (error) {
+            setLoading(false);
+            alertMessage('Ops, algo deu errado')
+        }
+    };
+
+    const removePlant = async (id: number) => {
+        try {
+            const updatedList = await deleteSavedPlant(id);
+            setSavedPlants(updatedList); 
         } catch (error) {
             alertMessage('Ops, algo deu errado')
         }
-    }
+    };
+
+    const handleRemove = (plant: SavedPlant) => {
+        Alert.alert('Remover', `Deseja remover a ${plant.name}?`, [
+            {
+                text: 'Sim',
+                onPress: () => removePlant(plant.id),
+            },
+            {
+                text: 'Não!',
+                style: 'cancel',
+            },
+        ]);
+    };
 
     useEffect(() => {
         fetchSaved();
@@ -52,18 +80,22 @@ const ListSavedPlants = () => {
                 <View style={styles.plantList}>
                     <Text style={styles.title}>Próximas regadas</Text>
 
-                    <FlatList
-                        data={savedPlants}
-                        renderItem={({ item }) => 
-                            <PlantCard
-                                type="row"
-                                name={item.name}
-                                photo={item.photo}
-                                wateringTime={format(new Date(item.dateTimeNotification), 'HH:mm')}
-                            />
-                        }
-                        keyExtractor={item => `${item.id}`}
-                    />
+                    {loading ? 
+                        <Loading /> :
+                        <FlatList
+                            data={savedPlants}
+                            renderItem={({ item }) => 
+                                <PlantCard
+                                    type="row"
+                                    name={item.name}
+                                    photo={item.photo}
+                                    wateringTime={format(new Date(item.dateTimeNotification), 'HH:mm')}
+                                    handleRemove={() => handleRemove(item)}
+                                />
+                            }
+                            keyExtractor={item => `${item.id}`}
+                        />
+                    }
                 </View>
 
             </View>
@@ -78,7 +110,8 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
     },
     spotlight: {
-        marginVertical: 40,
+        marginTop: 20,
+        marginBottom: 40,
     },
     title: {
         fontFamily: fonts.heading,

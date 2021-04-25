@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 import { format } from 'date-fns';
 
 const PLANT_KEY = '@plantmanager::plants';
@@ -24,6 +25,53 @@ export interface SavedPlant extends IPlant {
 interface StoragePlantProps {
     [id: string]: {
         data: SavedPlant;
+        notificationId: string;
+    }
+}
+
+const getPlantFequency = (plant: SavedPlant) => {
+    const { times, repeat_every } = plant.frequency;
+
+    const nextTime = new Date(plant.dateTimeNotification);
+    const now = new Date();
+
+    if (repeat_every === 'week') {
+        const interval = Math.trunc(7 / times);
+        nextTime.setDate(now.getDate() + interval);
+    } else {
+        nextTime.setDate(now.getDate() + 1)
+    }
+
+    const seconds = Math.abs(Math.ceil((now.getTime() - nextTime.getTime()) / 1000));
+    
+    return {
+        seconds,
+        nextTime,
+    }
+}
+
+const scheduleNotification = async (plant: SavedPlant) => {
+    const { seconds } = getPlantFequency(plant);
+
+    try {
+        const notificationId = await Notifications.scheduleNotificationAsync({
+            content: {
+                title: 'Heeeeeey!',
+                body: `Está na hora de cuidar da sua ${plant.name}!`,
+                sound: true,
+                priority: Notifications.AndroidNotificationPriority.HIGH,
+                data: {
+                    plant
+                },
+            },
+            trigger: {
+                seconds: seconds < 60 ? 60 : seconds,
+            }
+        });
+
+        return notificationId;
+    } catch (error) {
+        throw new Error(error);
     }
 }
 
@@ -31,11 +79,13 @@ export const addPlantToStorage = async (plant: SavedPlant): Promise<void> => {
     try {
         const data = await AsyncStorage.getItem(PLANT_KEY);
         const oldPlants: StoragePlantProps = data ? JSON.parse(data) : {};
+        const notificationId = await scheduleNotification(plant);
 
         const newPlants = {
             ...oldPlants,
             [plant.id]: {
                 data: plant,
+                notificationId,
             }
         }
 
@@ -54,7 +104,7 @@ export const fetchSavedPlants = async (): Promise<StoragePlantProps> => {
     }
 }
 
-export const fetchSavedPlantsList = async (): Promise<SavedPlant[] | undefined> => {
+export const fetchSavedPlantsList = async (): Promise<SavedPlant[]> => {
     try {
         const plants = await fetchSavedPlants();
         return Object
@@ -69,5 +119,24 @@ export const fetchSavedPlantsList = async (): Promise<SavedPlant[] | undefined> 
             ));
     } catch (error) {
         throw new Error(error);
+    }
+}
+
+export const deleteSavedPlant = async (id: number): Promise<SavedPlant[]> => {
+    try {
+        const data = await AsyncStorage.getItem(PLANT_KEY);
+        const plants: StoragePlantProps = data ? JSON.parse(data) : {};
+        const { notificationId } = plants[id];
+
+        await Notifications.cancelScheduledNotificationAsync(notificationId);
+
+        delete plants[id];
+
+        await AsyncStorage.setItem(PLANT_KEY, JSON.stringify(plants));
+
+        const updatedList = await fetchSavedPlantsList();
+        return updatedList;
+    } catch (error) {
+        throw new Error(error);        
     }
 }

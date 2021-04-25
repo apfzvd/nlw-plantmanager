@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DateTimePicker, { Event } from '@react-native-community/datetimepicker';
 import { format, isBefore } from 'date-fns';
@@ -14,7 +14,6 @@ import WateringTip from '../components/watering-tip';
 import { SvgFromUri } from 'react-native-svg';
 
 import { addPlantToStorage, IPlant } from '../helpers/plant-storage';
-import { TouchableOpacity } from 'react-native-gesture-handler';
 
 const SavePlant = () => {
     const navigation = useNavigation();
@@ -60,7 +59,7 @@ const SavePlant = () => {
 
     return (
         <Layout>
-            <View style={styles.container}>
+            <ScrollView contentContainerStyle={styles.container}>
                 <View style={styles.plantContainer}>
                     <SvgFromUri uri={plant.photo} height={150} width={150} />
                     <Text style={styles.plantName}>
@@ -97,7 +96,7 @@ const SavePlant = () => {
                     
                     <Button text="Cadastrar Planta" onPress={handleAddPlant} />
                 </View>
-            </View>
+            </ScrollView>
         </Layout>
     )
 };
